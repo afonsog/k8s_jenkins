@@ -9,6 +9,7 @@ jenkins_values:
     adminPassword: jenkins
     jenkinsAdminEmail: geronimo.afonso@mikroways.net
     serviceAnnotations:
-      external-dns.alpha.kubernetes.io/hostname: nginx.test.geronimo.com
+      external-dns.alpha.kubernetes.io/target: nginx.test.geronimo.com
+      #external-dns.alpha.kubernetes.io/hostname: nginx.test.geronimo.com
       #  persistence: # para testing
           #    enabled: false
