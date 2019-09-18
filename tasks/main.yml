@@ -1,37 +1,84 @@
 ---
-# tasks file for afonsog.k8s_jenkins
 
-- set_fact:
-    tun_pid_file: /tmp/helm_pid
+- name: fail if state is not recognized
+  fail:
+    msg: "No se reconoce el estado: {{ m7s_jenkins_state }}"
+  when: 
+  - m7s_jenkins_enabled == true
+  - m7s_jenkins_state not in ["installed", "upgraded", "purged"]
 
-- block:
-    - name: set up a tunnel to tiller
-      shell: |
-        tiller_pod="$(kubectl --namespace=kube-system --selector app=helm,name=tiller get pods --output=jsonpath='{.items[*].metadata.name}')"
-        nohup kubectl port-forward "$tiller_pod" 44134:44134 --namespace kube-system </dev/null >/dev/null 2>&1 &
-        echo "$!" >{{ tun_pid_file|quote }}
-      args:
-        creates: "{{ tun_pid_file }}"
-      changed_when: false
+- name: check if namespace is being used
+  k8s_facts:
+    api_version: v1
+    kind: Namespace
+    name: "{{ m7s_jenkins_namespace }}"
+  register: namespace_output
+  when: 
+  - m7s_jenkins_enabled == true
+  
+- name: debug
+  fail:
+    msg: "El namespace {{ m7s_jenkins_namespace }} ya existe."
+  when: (namespace_output.resources | length > 0) and m7s_jenkins_enabled and m7s_jenkins_state == 'installed'
 
-    - name: install Jenkins via helm
-      helm:
-        chart:
-          name: jenkins
-          version: "{{ jenkins_version }}"
-          source:
-            type: repo
-            location: https://kubernetes-charts.storage.googleapis.com
-        state: "{{ 'present' if jenkins_enabled else 'purged' }}"
-        name: jenkins
-        namespace: jenkins
-        values: "{{ jenkins_values }}"
+- name: get chart
+  shell: helm fetch stable/jenkins --version "{{ m7s_jenkins_version }}"
+  args:
+    chdir: /tmp/
+  when: m7s_jenkins_enabled == true
 
-  always:
-    - name: tear down the tunnel to tiller
-      shell: |
-        kill "$(cat {{ tun_pid_file|quote }})" || true
-        rm -f {{ tun_pid_file|quote }}
-      args:
-        removes: "{{ tun_pid_file }}"
-      changed_when: false
+- name: unarchive chart
+  unarchive:
+    src: "/tmp/jenkins-{{ m7s_jenkins_version }}.tgz"
+    dest: "/tmp/"
+    remote_src: yes
+  when: m7s_jenkins_enabled == true
+
+- name: get default values.yaml
+  shell: cat /tmp/jenkins/values.yaml | egrep -v "^\s*#"
+  register: values_original
+  when: m7s_jenkins_enabled == true
+
+- name: combine values
+  set_fact:
+    values_modified: "{{ values_original.stdout | from_yaml | combine(m7s_jenkins_values, recursive=True) }}"
+  when: m7s_jenkins_enabled == true
+
+- name: delete original values.yaml
+  file:
+    path: /tmp/jenkins/values.yaml
+    state: absent
+  when: m7s_jenkins_enabled == true
+
+- name: replace values.yml
+  blockinfile:
+    path: /tmp/jenkins/values.yaml
+    create: yes
+    block: "{{ values_modified | to_nice_yaml(width=80, indent=2) }}"
+  when: m7s_jenkins_enabled == true
+
+- name: helm install
+  shell: helm install ./ --namespace "{{ m7s_jenkins_namespace }}" --name "{{ m7s_jenkins_name }}" -f ./values.yaml 
+  args:
+    chdir: /tmp/jenkins/
+  when: m7s_jenkins_enabled == true and m7s_jenkins_state == 'installed'
+
+- name: helm upgrade
+  shell: helm upgrade "{{ m7s_jenkins_name }}" ./ -f ./values.yaml
+  args:
+    chdir: /tmp/jenkins/
+  when: m7s_jenkins_enabled == true and m7s_jenkins_state == 'upgraded'
+
+- name: helm purge
+  shell: helm delete --purge "{{ m7s_jenkins_name }}"
+  when: m7s_jenkins_enabled == true and m7s_jenkins_state == 'purged'
+
+- name: clean
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+  - "/tmp/jenkins-{{ m7s_jenkins_version }}.tgz"
+  - /tmp/jenkins
+  when: m7s_jenkins_enabled == true
+

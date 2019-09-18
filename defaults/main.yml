@@ -1,15 +1,9 @@
 ---
 # defaults file for afonsog.k8s_jenkins
 
-jenkins_enabled: true
-jenkins_version: 1.6.0 
-jenkins_values:
-  master:
-    adminUser: geronimo
-    adminPassword: jenkins
-    jenkinsAdminEmail: geronimo.afonso@mikroways.net
-    serviceAnnotations:
-      external-dns.alpha.kubernetes.io/target: nginx.test.geronimo.com
-      #external-dns.alpha.kubernetes.io/hostname: nginx.test.geronimo.com
-      #  persistence: # para testing
-          #    enabled: false
+k8s_jenkins_enabled: false
+k8s_jenkins_namespace: jenkins
+k8s_jenkins_name: jenkins
+k8s_jenkins_state: installed
+k8s_jenkins_version: 1.6.0
+k8s_jenkins_values: {}
