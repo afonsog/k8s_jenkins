@@ -1,9 +1,9 @@
 ---
 # defaults file for afonsog.k8s_jenkins
 
-k8s_jenkins_enabled: false
-k8s_jenkins_namespace: jenkins
-k8s_jenkins_name: jenkins
-k8s_jenkins_state: installed
-k8s_jenkins_version: 1.6.0
-k8s_jenkins_values: {}
+m7s_jenkins_enabled: false
+m7s_jenkins_namespace: jenkins
+m7s_jenkins_name: jenkins
+m7s_jenkins_state: installed
+m7s_jenkins_version: 1.6.0
+m7s_jenkins_values: {}
