@@ -5,5 +5,5 @@ m7s_jenkins_enabled: false
 m7s_jenkins_namespace: jenkins
 m7s_jenkins_name: jenkins
 m7s_jenkins_state: installed
-m7s_jenkins_version: 1.6.0
+m7s_jenkins_version: 1.5.0
 m7s_jenkins_values: {}
