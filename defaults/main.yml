@@ -2,8 +2,20 @@
 # defaults file for afonsog.k8s_jenkins
 
 m7s_jenkins_enabled: false
-m7s_jenkins_namespace: jenkins
-m7s_jenkins_name: jenkins
-m7s_jenkins_state: installed
-m7s_jenkins_version: 1.5.0
-m7s_jenkins_values: {}
+m7s_jenkins:
+  - name: jenkins-3
+    namespace: jenkins-3
+    state: purged
+    version: 1.5.0
+    chart_values: 
+      namespaceOverride: jenkins-3
+      rbac:
+        create: true
+  - name: jenkins-2
+    namespace: jenkins-2
+    state: purged
+    version: 1.5.0
+    chart_values:
+      namespaceOverride: jenkins-2
+      rbac:
+        create: true
